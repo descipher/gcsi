@@ -1,10 +1,10 @@
 /**
  *	File:       	main.cpp
- *	Version:  		1.0
+ *	Version:  	1.0
  *	Date:       	2018
- *	License:		GPL v3
+ *	License:	GPL v3
  *	Description:	Geiger.Counter.1 hardware main code
- *	Project:		Geiger.Counter.1, Logging, USB Interface and low power field operations.
+ *	Project:	Geiger.Counter.1, WiFi, Logging, USB Interface and low power field operations.
  *
  *	Copyright 2013 by Radu Motisan, radu.motisan@gmail.com
  *	Copyright 2016 by Magnasci SRL, www.magnasci.com
@@ -71,30 +71,31 @@ volatile time rtc;
 /************************************************************************************************************************************************/
 /* Global Objects                                                       																		*/
 /************************************************************************************************************************************************/
-char				buffer[85] = { 0 };			// general purpose buffer min 85 for LCD data
-pin					speaker(&PORTC, PC5),			// used to create digital pulse on radiation event
-					backlight(&PORTD, PD4),			// used to toggle LCD light on and off
-					button1(&PORTC, PC3, pin::INPUT), // user button1, configured as input pin
-					button2(&PORTD, PD3, pin::INPUT), // user button2, configured as input pin
-					ch_pd(&PORTC, PC4),				// ESP8266 WIFI module
-					lcdReset(&PORTB, PB0), 			// lcd RST pin
-					lcdCE(&PORTD, PD7),				// lcd CE pin
-					lcdDC(&PORTD, PD6), 			// lcd DC pin
-					lcdDATA(&PORTD, PD5), 			// lcd DATA pin
-					lcdCLK(&PORTC, PC1);			// lcd CLK pin
-LCD_5110			lcd(&lcdReset, &lcdCE, &lcdDC, &lcdDATA, &lcdCLK, &backlight);	// handle the LCD ops for drawing content on screen
+char	buffer[85] = { 0 };			// general purpose buffer min 85 for LCD data
+pin	speaker(&PORTC, PC5),			// used to create digital pulse on radiation event
+	backlight(&PORTD, PD4),			// used to toggle LCD light on and off
+	button1(&PORTC, PC3, pin::INPUT), // user button1, configured as input pin
+	button2(&PORTD, PD3, pin::INPUT), // user button2, configured as input pin
+	ch_pd(&PORTC, PC4),				// ESP8266 WIFI module
+	lcdReset(&PORTB, PB0), 			// lcd RST pin
+	lcdCE(&PORTD, PD7),				// lcd CE pin
+	lcdDC(&PORTD, PD6), 			// lcd DC pin
+	lcdDATA(&PORTD, PD5), 			// lcd DATA pin
+	lcdCLK(&PORTC, PC1);			// lcd CLK pin
 
-DATA				Data;
-UI					ui(&lcd, &ch_pd, &speaker, &button1, &button2, &Data, buffer, sizeof(buffer));// lcd, ch_pd, speaker, button and data, form the GUI for user interaction
+LCD_5110		lcd(&lcdReset, &lcdCE, &lcdDC, &lcdDATA, &lcdCLK, &backlight);	// handle the LCD ops for drawing content on screen
 
-uint32_t			deviceNumber = 0;				// If null, Dynamic ID  is enabled . Add a non null value to set number manually
+DATA			Data;
+UI			ui(&lcd, &ch_pd, &speaker, &button1, &button2, &Data, buffer, sizeof(buffer));// lcd, ch_pd, speaker, button and data, form the GUI for user interaction
+
+uint32_t		deviceNumber = 0;				// If null, Dynamic ID  is enabled . Add a non null value to set number manually
 volatile uint32_t 	geigerPulses = 0;				// geiger: total number of pulses detected
-bool				cmdRefresh = 0;					// if true will refresh display
+bool			cmdRefresh = 0;					// if true will refresh display
 
-uint16_t inv_duty = INVERTER_DUTY_MIN;				//Basic HV inverter duty control
+uint16_t inv_duty = INVERTER_DUTY_MIN;	//Basic HV inverter duty control
 
-NVMConfig EEMEM Startup;							//Non volatile config in EEROM
-NVMConfig Running;									//Non volatile config running copy 
+NVMConfig EEMEM Startup;		//Non volatile config in EEROM
+NVMConfig Running;			//Non volatile config running copy 
 extern uart Serial;
 uint8_t CPS[60] = {0};			// Count per second array used to find accurate average CPM 
 uint16_t geigerCPM = 0;	
@@ -371,19 +372,19 @@ bool inv_adjustDutyCycle(uint16_t measuredVoltage, uint16_t targetVoltage) {
 	
 	loadConfig();
 	if (Running.unitID == 0xFFFFFFFF ) { //Not initialized, load defaults
-			Running.speakerState = 0;
-			Running.loggingState = 0;
-			Running.alarmState = 0;
-			Running.logInterval = 0;
-			Running.geigerTube = 1;
-			Running.calibration = 126;	//Default to center of calibration registers value range 
-			Running.WifiState = 1;
-			Running.WifiMode = 2;					//default to AP mode			
-			strcpy(Running.SSID,"GC.1\0");			//default AP SSID is GC.1
-			for (uint8_t i=0;i<16;i++) Running.Password[i] = 0;  
-			Running.alarmTimeStamp = 0;
-			Running.unitID= 0x2055AA55;
-			saveConfig();
+		Running.speakerState = 0;
+		Running.loggingState = 0;
+		Running.alarmState = 0;
+		Running.logInterval = 0;
+		Running.geigerTube = 1;
+		Running.calibration = 126;	//Default to center of calibration registers value range 
+		Running.WifiState = 1;
+		Running.WifiMode = 2;					//default to AP mode			
+		strcpy(Running.SSID,"GC.1\0");			//default AP SSID is GC.1
+		for (uint8_t i=0;i<16;i++) Running.Password[i] = 0;  
+		Running.alarmTimeStamp = 0;
+		Running.unitID= 0x2055AA55;
+		saveConfig();
 	}
 #ifndef CLOCK_12MHZ
 	OSCCAL = Running.calibration;		//load last calculated calibration value
