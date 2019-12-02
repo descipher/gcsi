@@ -8,7 +8,7 @@
  *
  *	Copyright 2013 by Radu Motisan, radu.motisan@gmail.com
  *	Copyright 2016 by Magnasci SRL, www.magnasci.com
- *  Copyright 2017 by Gelidus Research Inc, mike.laspina@gelidus.ca
+ *  	Copyright 2017 by Gelidus Research Inc, mike.laspina@gelidus.ca
  *
  *	This program is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
@@ -35,15 +35,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-//#include "sd/diskio.h"
-//#include "sd/pff.h"
 #include "config.h"
 #include "jsmn/jsoncmd.h"
-//#include "lcd/radsymbol84x48.h"
 #include "lcd/5110.h"
 #include "gpio/pins.h"
 #include "time/rtc.h"
-//#include  "ArduinoJson/ArduinoJson.h"
 #include "jsmn/jsmn.h"
 #include "geiger/detectors.h"
 #include "misc/utils.h"
@@ -52,9 +48,6 @@
 #include "logger/logger.h"
 #include "uart/uart.h"
 #include "wstring/wstring.h"
-//#include "wifi/WiFiEsp.h"
-//#include "esp/EspCom.h"
-
 
 bool onConfigChange = false;
 bool calibrated = false;
@@ -75,21 +68,10 @@ uint8_t calibration = 120;		//counter ref val for internal rc calibration
 
 volatile time rtc;
 
-// //Petit FS Objects
-// FATFS fs;
-// uint32_t file_pos = 0;
-// uint16_t btw,bw = 0; //bytes to write, bytes written
-// DSTATUS status;
-// FRESULT result;
-// char log_line[48] = "Date,Time,CPM,Dose\r\n";
-// uint8_t sd_card = 0;
-
-
 /************************************************************************************************************************************************/
 /* Global Objects                                                       																		*/
 /************************************************************************************************************************************************/
 char				buffer[85] = { 0 };			// general purpose buffer min 85 for LCD data
-//char				databuff[40] = {0};			//Data reading from device to serial as json 
 pin					speaker(&PORTC, PC5),			// used to create digital pulse on radiation event
 					backlight(&PORTD, PD4),			// used to toggle LCD light on and off
 					button1(&PORTC, PC3, pin::INPUT), // user button1, configured as input pin
@@ -114,7 +96,6 @@ uint16_t inv_duty = INVERTER_DUTY_MIN;				//Basic HV inverter duty control
 NVMConfig EEMEM Startup;							//Non volatile config in EEROM
 NVMConfig Running;									//Non volatile config running copy 
 extern uart Serial;
-//extern uint8_t sd_buff[];
 uint8_t CPS[60] = {0};			// Count per second array used to find accurate average CPM 
 uint16_t geigerCPM = 0;	
 uint8_t geigerCPS = 0;
@@ -253,13 +234,6 @@ static uint8_t read_json() {
 }
 
 
-
-	
-// simple sound functions
-// inline void sdelay() { _delay_ms(40); }
-// inline void sbeep() { speaker = 1; sdelay(); speaker = 0; sdelay(); }
-// inline void lbeep() { speaker = 1; sdelay(); sdelay(); sdelay(); speaker = 0; sdelay(); }
-
 //interrupt-driven routine to update the software clock
 ISR(TIMER2_OVF_vect) { 
 	timeEvent();
@@ -314,69 +288,6 @@ void saveConfig() {
 void loadConfig() {
 	eeprom_read_block(( uint8_t *) &Running, EEPROM_ADDR_BEGIN, EEPROM_ADDR_END);
 }
-
-
-// FRESULT write_log(void)
-// {
-// 	FRESULT res;
-// 	sprintf(log_line,"%02u/%02u/%04u,%02d:%02d:%02d,%lu,%.5f\r\n",rtc.day,rtc.month,rtc.year,rtc.hour,rtc.minute,rtc.second,Data.State.geigerCPM,Data.State.geigerDose);
-// 	//pf_lseek(file_pos);
-// 	btw = strlen(log_line);
-// 	res = pf_write(&log_line, btw, &bw);
-// 	lcd.goto_xy(11,1);
-// 	lcd.send(0x30+res);
-// 	_delay_ms(150);
-// 	//file_pos += bw;
-// 	return res;
-// }
-
-// void init_sd_card(void)
-// {
-// 	DSTATUS status;
-// 	FRESULT result;
-// 	char line[16] = "Writing worked.";
-// 	uint16_t cnt, w;
-// 	
-// 	/* Initialize physical drive */
-// 	status = disk_initialize();
-// 
-// 	lcd.goto_xy(0,5);
-// 	lcd.send(0x30+status);
-// 	_delay_ms(100);
-// 
-// 	
-// 	/* Mount volume */
-// 	result = pf_mount(&fs);
-// 	if (result != FR_OK) {
-// 	}
-// 	
-// 	lcd.send(0x30+result);
-// 	_delay_ms(100);
-// 
-// 	/* Open file */
-// 	result = pf_open("gc1.log");
-// 	if (result != FR_OK) {
-// 	}
-// 	
-// 	lcd.send(0x30+result);
-// 	_delay_ms(100);
-// 	
-// 	/* Write file */
-// 	cnt = sizeof(line);
-// 	
-// 	/* Set file pointer to beginning of file */
-// 	pf_lseek(0);
-// 	
-// 	result = pf_write(&line, cnt, &w);	/* Write data to the file */
-// 	lcd.send(0x30+result);
-// 	_delay_ms(100);
-// 	
-// 	result = pf_write(0, 0, &w);		/* Finalize the write process */
-// 	lcd.send(0x30+result);
-// 	_delay_ms(100);
-// 	
-// }
-
 
 // RC Calibration routine  returns the number of RTC loops
 uint8_t TickCalc() {
@@ -517,25 +428,6 @@ bool inv_adjustDutyCycle(uint16_t measuredVoltage, uint16_t targetVoltage) {
 	while (1) {
 		
 	ui.loop(&cmdRefresh);
-
-// 	if (Running.loggingState == true && sd_card == 0) {
-// 		status = disk_initialize();
-// 		lcd.goto_xy(10,1);
-// 		lcd.send(0x30+status);
-// 		if (status == 0) {
-// 		sd_card = 1;
-// 		result = pf_mount(&fs);
-//		result = pf_open("gc1.log");
-// 		result = pf_lseek(0);
-// 		result = pf_write(&log_line,strlen(log_line),&bw);
-// 		};
-// 		//file_pos = sizeof(log_line);
-	
-// 	if (Running.loggingState == false && sd_card == 1) {
-// 		pf_write(0, 0, &bw);
-// 		sd_card = 0;
-// 	}
-	
 
 	if (onConfigChange) {
 		
